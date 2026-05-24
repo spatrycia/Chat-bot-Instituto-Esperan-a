@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Instituto Esperança · Chat</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', Helvetica, sans-serif; background: #ECE5DD; min-height: 100vh; display: flex; flex-direction: column; align-items: center; }
+
+    .header { width: 100%; max-width: 480px; background: #075E54; padding: 10px 14px; display: flex; align-items: center; gap: 11px; position: sticky; top: 0; z-index: 10; box-shadow: 0 2px 8px rgba(0,0,0,0.25); }
+    .avatar { width: 46px; height: 46px; border-radius: 50%; background: linear-gradient(135deg, #25D366, #128C7E); display: flex; align-items: center; justify-content: center; font-size: 23px; flex-shrink: 0; }
+    .header-info { flex: 1; }
+    .header-name { color: #fff; font-weight: 700; font-size: 15px; }
+    .header-status { color: #B2DFDB; font-size: 11.5px; }
+    .header-phone { color: #B2DFDB; font-size: 22px; text-decoration: none; }
+
+    .infobar { width: 100%; max-width: 480px; background: #128C7E; padding: 6px 14px; text-align: center; }
+    .infobar p { color: #E8F5E9; font-size: 11.5px; }
+
+    .messages { width: 100%; max-width: 480px; flex: 1; padding: 12px 8px 120px; display: flex; flex-direction: column; gap: 3px; }
+
+    .date-stamp { text-align: center; margin: 6px 0 10px; }
+    .date-stamp span { background: rgba(255,255,255,0.55); padding: 3px 14px; border-radius: 12px; font-size: 11px; color: #555; }
+
+    .msg-row { display: flex; margin-bottom: 1px; animation: fadeUp 0.22s ease; }
+    .msg-row.bot { justify-content: flex-start; }
+    .msg-row.user { justify-content: flex-end; }
+
+    .bubble { max-width: 80%; padding: 8px 11px 5px; box-shadow: 0 1px 2px rgba(0,0,0,0.12); }
+    .bubble.bot { background: #fff; border-radius: 12px 12px 12px 2px; }
+    .bubble.bot.cont { border-radius: 2px 12px 12px 12px; }
+    .bubble.user { background: #DCF8C6; border-radius: 12px 12px 2px 12px; }
+    .bubble.user.cont { border-radius: 12px 2px 12px 12px; }
+
+    .bubble-sender { font-size: 11.5px; color: #075E54; font-weight: 700; margin-bottom: 2px; }
+    .bubble-text { font-size: 14.5px; line-height: 1.52; color: #111; white-space: pre-wrap; }
+    .bubble-time { font-size: 10.5px; color: #999; text-align: right; margin-top: 3px; }
+
+    .typing { display: flex; justify-content: flex-start; animation: fadeUp 0.2s ease; }
+    .typing-bubble { background: #fff; border-radius: 12px 12px 12px 2px; padding: 10px 15px; box-shadow: 0 1px 2px rgba(0,0,0,0.12); display: flex; gap: 5px; align-items: center; }
+    .dot { width: 7px; height: 7px; border-radius: 50%; background: #aaa; }
+    .dot:nth-child(1) { animation: bounce 1.1s 0s infinite; }
+    .dot:nth-child(2) { animation: bounce 1.1s 0.18s infinite; }
+    .dot:nth-child(3) { animation: bounce 1.1s 0.36s infinite; }
+
+    .quick-replies { display: flex; flex-wrap: wrap; gap: 7px; padding: 8px 2px; justify-content: flex-end; animation: fadeUp 0.3s ease; }
+    .qr-btn { padding: 6px 13px; border-radius: 20px; border: 1.5px solid #25D366; background: #fff; color: #075E54; font-size: 12px; cursor: pointer; font-weight: 600; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+
+    .card { margin: 8px 0; animation: fadeUp 0.3s ease; background: #fff; border-radius: 16px; padding: 14px 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.12); }
+    .card.pix { border: 1.5px solid #25D366; }
+    .card.address { border: 1px solid #e0e0e0; }
+    .card.welcome { border: 1px solid #a8d5a2; }
+    .card-title { font-weight: 700; color: #075E54; font-size: 14px; margin-bottom: 10px; }
+    .card-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid #f0f0f0; }
+    .card-label { font-size: 12px; color: #777; }
+    .card-value { font-size: 13px; color: #111; font-weight: 600; }
+    .card-note { font-size: 11.5px; color: #555; text-align: center; margin-top: 10px; line-height: 1.5; }
+    .card-address-text { font-size: 13.5px; color: #222; line-height: 1.6; margin-bottom: 10px; }
+    .card-desc { font-size: 12.5px; color: #444; line-height: 1.5; margin-bottom: 12px; }
+
+    .card-btn { display: flex; align-items: center; justify-content: center; gap: 6px; background: #075E54; color: #fff; text-decoration: none; padding: 9px 14px; border-radius: 12px; font-size: 13px; font-weight: 600; }
+    .card-btn.green { background: linear-gradient(135deg, #25D366, #128C7E); }
+
+    .schedule-btn-wrap { display: flex; justify-content: center; margin: 8px 0; animation: fadeUp 0.3s ease; }
+    .schedule-btn { display: flex; align-items: center; gap: 9px; background: linear-gradient(135deg, #25D366, #128C7E); color: #fff; text-decoration: none; padding: 12px 20px; border-radius: 28px; font-weight: 700; font-size: 14px; box-shadow: 0 4px 14px rgba(37,211,102,0.35); }
+
+    .input-bar { width: 100%; max-width: 480px; position: fixed; bottom: 0; background: #F0F0F0; padding: 8px 10px; display: flex; align-items: center; gap: 8px; border-top: 1px solid #ddd; }
+    .input-wrap { flex: 1; background: #fff; border-radius: 24px; display: flex; align-items: center; padding: 0 13px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    .input-emoji { font-size: 18px; margin-right: 6px; }
+    .input-field { flex: 1; border: none; outline: none; font-size: 14.5px; padding: 10px 0; background: transparent; color: #111; }
+    .input-field::placeholder { color: #aaa; }
+    .send-btn { width: 46px; height: 46px; border-radius: 50%; border: none; background: #ccc; color: #fff; font-size: 20px; cursor: default; display: flex; align-items: center; justify-content: center; transition: background 0.2s; box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
+    .send-btn.active { background: #25D366; cursor: pointer; }
+
+    @keyframes bounce { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-5px)} }
+    @keyframes fadeUp { from{opacity:0;transform:translateY(7px)} to{opacity:1;transform:translateY(0)} }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <div class="header">
+    <div class="avatar">🧠</div>
+    <div class="header-info">
+      <div class="header-name">Instituto Esperança</div>
+      <div class="header-status" id="status-text">● Ana · online agora</div>
+    </div>
+    <a class="header-phone" href="https://wa.me/5562991713180?text=Olá%2C+vim+pelo+chatbot!" target="_blank">📞</a>
+  </div>
+
+  <!-- Info bar -->
+  <div class="infobar">
+    <p>Neuropsicóloga Silvia Ferreira · (62) 99171-3180 · Seg–Sex 8h–17h · Presencial e Online</p>
+  </div>
+
+  <!-- Messages -->
+  <div class="messages" id="messages">
+    <div class="date-stamp"><span>HOJE</span></div>
+  </div>
+
+  <!-- Input -->
+  <div class="input-bar">
+    <div class="input-wrap">
+      <span class="input-emoji">😊</span>
+      <input class="input-field" id="input" placeholder="Mensagem" />
+    </div>
+    <button class="send-btn" id="send-btn" onclick="sendMessage()">➤</button>
+  </div>
+
+  <script>
+    const BACKEND = "https://zero1-chat-bot-instituto-esperanca.onrender.com/chat";
+    const WHATSAPP = "https://wa.me/5562991713180?text=Olá%2C+vim+pelo+chatbot+e+gostaria+de+agendar!";
+    const MAPS = "https://maps.app.goo.gl/VYJH3jtwYYpHZpNy9";
+    const WELCOME = "https://bem-vinda-a-sua-primeira-9vj53fk.gamma.site/";
+
+    const QUICK_REPLIES = [
+      "Quero fazer avaliação neuropsicológica",
+      "Preciso de laudo para cirurgia bariátrica",
+      "Meu filho tem dificuldade na escola",
+      "Suspeito que tenho TDAH",
+      "Meu filho pode ter autismo",
+      "Avaliação para cirurgia reparadora",
+      "Tenho indicação de psicólogo",
+    ];
+
+    let apiHistory = [];
+    let isTyping = false;
+    let loading = false;
+    let showedPix = false;
+    let showedAddress = false;
+    let showedWelcome = false;
+    let showedSchedule = false;
+    let lastRole = null;
+
+    const messagesEl = document.getElementById("messages");
+    const inputEl = document.getElementById("input");
+    const sendBtn = document.getElementById("send-btn");
+    const statusEl = document.getElementById("status-text");
+
+    inputEl.addEventListener("input", () => {
+      sendBtn.className = inputEl.value.trim() && !loading && !isTyping ? "send-btn active" : "send-btn";
+    });
+    inputEl.addEventListener("keydown", e => { if (e.key === "Enter") sendMessage(); });
+
+    function nowTime() {
+      return new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+    }
+
+    function scrollBottom() {
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+
+    function addMessage(role, text) {
+      const row = document.createElement("div");
+      row.className = `msg-row ${role}`;
+      const cont = lastRole === role;
+      const bubble = document.createElement("div");
+      bubble.className = `bubble ${role}${cont ? " cont" : ""}`;
+      if (role === "bot" && !cont) {
+        const sender = document.createElement("div");
+        sender.className = "bubble-sender";
+        sender.textContent = "Ana · Instituto Esperança";
+        bubble.appendChild(sender);
+      }
+      const txt = document.createElement("div");
+      txt.className = "bubble-text";
+      txt.textContent = text;
+      bubble.appendChild(txt);
+      const time = document.createElement("div");
+      time.className = "bubble-time";
+      time.textContent = nowTime() + (role === "user" ? " ✓✓" : "");
+      bubble.appendChild(time);
+      row.appendChild(bubble);
+      messagesEl.appendChild(row);
+      lastRole = role;
+      scrollBottom();
+    }
+
+    function showTyping() {
+      removeTyping();
+      const row = document.createElement("div");
+      row.className = "typing";
+      row.id = "typing-indicator";
+      row.innerHTML = `<div class="typing-bubble"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>`;
+      messagesEl.appendChild(row);
+      statusEl.textContent = "digitando...";
+      scrollBottom();
+    }
+
+    function removeTyping() {
+      const t = document.getElementById("typing-indicator");
+      if (t) t.remove();
+      statusEl.textContent = "● Ana · online agora";
+    }
+
+    function splitChunks(text) {
+      const raw = text.split(/\n\n+/).filter(c => c.trim());
+      const out = [];
+      for (const chunk of raw) {
+        const s = chunk.match(/[^.!?]+[.!?]+(?:\s|$)/g) || [chunk];
+        let cur = "";
+        for (const sentence of s) {
+          if ((cur + sentence).length > 200 && cur) { out.push(cur.trim()); cur = sentence.trim(); }
+          else cur += (cur ? " " : "") + sentence.trim();
+        }
+        if (cur.trim()) out.push(cur.trim());
+      }
+      return out.length ? out : [text.trim()];
+    }
+
+    function deliverChunks(chunks, showQR = false) {
+      isTyping = true;
+      sendBtn.className = "send-btn";
+      showTyping();
+      chunks.forEach((chunk, i) => {
+        setTimeout(() => {
+          removeTyping();
+          addMessage("bot", chunk);
+          if (i < chunks.length - 1) showTyping();
+          else {
+            isTyping = false;
+            if (showQR) addQuickReplies();
+            sendBtn.className = inputEl.value.trim() ? "send-btn active" : "send-btn";
+          }
+        }, 700 + i * 1300);
+      });
+    }
+
+    function addQuickReplies() {
+      const wrap = document.createElement("div");
+      wrap.className = "quick-replies";
+      QUICK_REPLIES.forEach(r => {
+        const btn = document.createElement("button");
+        btn.className = "qr-btn";
+        btn.textContent = r;
+        btn.onclick = () => { wrap.remove(); sendMessage(r); };
+        wrap.appendChild(btn);
+      });
+      messagesEl.appendChild(wrap);
+      scrollBottom();
+    }
+
+    function detectIntent(text) {
+      const lower = text.toLowerCase();
+      if (!showedPix && ["pix", "chave", "comprovante", "banco do brasil"].some(k => lower.includes(k))) {
+        showedPix = true; addPixCard();
+      }
+      if (!showedAddress && ["west office", "rua 3", "setor oeste", "presencial", "endereço"].some(k => lower.includes(k))) {
+        showedAddress = true; addAddressCard();
+      }
+      if (!showedWelcome && ["agendado", "confirmad", "boas-vindas", "até segunda"].some(k => lower.includes(k))) {
+        showedWelcome = true; addWelcomeCard();
+      }
+      if (!showedSchedule && ["segunda-feira", "13h", "16h", "agendar", "vaga"].some(k => lower.includes(k))) {
+        showedSchedule = true; addScheduleBtn();
+      }
+    }
+
+    function addPixCard() {
+      const card = document.createElement("div");
+      card.className = "card pix";
+      card.innerHTML = `
+        <div class="card-title">💰 Dados para PIX — R$ 350,00</div>
+        <div class="card-row"><span class="card-label">Chave</span><span class="card-value">(62) 99171-3180</span></div>
+        <div class="card-row"><span class="card-label">Banco</span><span class="card-value">Banco do Brasil</span></div>
+        <div class="card-row"><span class="card-label">Nome</span><span class="card-value">Silvia Patrycia Ferreira de Moraes</span></div>
+        <div class="card-note">Envie o comprovante para (62) 99171-3180<br>e sua vaga estará confirmada ✅</div>
+      `;
+      messagesEl.appendChild(card); scrollBottom();
+    }
+
+    function addAddressCard() {
+      const card = document.createElement("div");
+      card.className = "card address";
+      card.innerHTML = `
+        <div class="card-title">📍 Endereço — Atendimento Presencial</div>
+        <div class="card-address-text"><strong>West Office</strong><br>Rua 3, nº 1022, sala 903<br>Setor Oeste, Goiânia-GO</div>
+        <a class="card-btn" href="${MAPS}" target="_blank">🗺️ Abrir no Google Maps</a>
+        <div class="card-note">Chegue com alguns minutinhos de antecedência e traga um documento com foto 🪪</div>
+      `;
+      messagesEl.appendChild(card); scrollBottom();
+    }
+
+    function addWelcomeCard() {
+      const card = document.createElement("div");
+      card.className = "card welcome";
+      card.innerHTML = `
+        <div class="card-title">🌿 Bem-vinda à sua primeira consulta!</div>
+        <div class="card-desc">Aqui você encontra orientações importantes para se preparar para a avaliação com a Neuropsicóloga Silvia Ferreira.</div>
+        <a class="card-btn green" href="${WELCOME}" target="_blank">🔗 Acessar página de boas-vindas</a>
+      `;
+      messagesEl.appendChild(card); scrollBottom();
+    }
+
+    function addScheduleBtn() {
+      const wrap = document.createElement("div");
+      wrap.className = "schedule-btn-wrap";
+      wrap.innerHTML = `<a class="schedule-btn" href="${WHATSAPP}" target="_blank"><span>📅</span> Agendar com a Neuropsicóloga Silvia</a>`;
+      messagesEl.appendChild(wrap); scrollBottom();
+    }
+
+    async function sendMessage(text) {
+      const userText = text || inputEl.value.trim();
+      if (!userText || loading || isTyping) return;
+      inputEl.value = "";
+      sendBtn.className = "send-btn";
+      loading = true;
+      addMessage("user", userText);
+      const newHistory = [...apiHistory, { role: "user", content: userText }];
+      apiHistory = newHistory;
+      showTyping();
+      isTyping = true;
+      try {
+        const response = await fetch(BACKEND, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ messages: newHistory }),
+        });
+        const data = await response.json();
+        const reply = data.text || "Desculpe, tive um probleminha. Pode repetir?";
+        apiHistory = [...newHistory, { role: "assistant", content: reply }];
+        detectIntent(reply);
+        removeTyping();
+        isTyping = false;
+        deliverChunks(splitChunks(reply));
+      } catch {
+        removeTyping();
+        isTyping = false;
+        addMessage("bot", "Ops, problema de conexão. Tente novamente 🙏");
+        loading = false;
+        sendBtn.className = inputEl.value.trim() ? "send-btn active" : "send-btn";
+      } finally {
+        loading = false;
+      }
+    }
+
+    // Início
+    setTimeout(() => {
+      deliverChunks([
+        "Olá! Seja bem-vindo(a) ao Instituto Esperança. 💚",
+        "Eu sou a Ana, assistente virtual da Neuropsicóloga Silvia Ferreira.",
+        "O que te trouxe até aqui hoje?",
+      ], true);
+    }, 600);
+  </script>
+</body>
+</html>
