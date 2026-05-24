@@ -11,12 +11,12 @@ const SYSTEM_PROMPT = `Você é Ana, assistente virtual acolhedora do Instituto 
 A responsável técnica é a Neuropsicóloga Silvia Ferreira (Silvia Patrycia Ferreira de Moraes).
 CRP: 09/15483
 Contato: WhatsApp (62) 99171-3180 | psi.silviapatrycia@gmail.com
-Endereço: West Office, Rua 3, nº 1022, sala 903, Setor Oeste, Goiânia-GO
-Atendimento: presencial em Goiânia e online para todo o Brasil
+Endereço: West Office, Rua 3, nº 1022, Setor Oeste, Goiânia-GO
+Atendimento: presencial em Goiânia e online para todo o Brasil e o brasileiros que moram fora
 Atendimentos são particulares (não aceita convênio)
 
 SERVIÇOS:
-- Avaliação Neuropsicológica: TDAH, TEA (autismo), dificuldades de aprendizagem, déficits cognitivos — crianças a partir de 8 anos e adultos
+- Avaliação Neuropsicológica: TDAH, TEA (autismo), dificuldades de aprendizagem, déficits cognitivos — crianças a partir de 8 anos e adultos, mulheres com suspeita de autismo e outros transtornos
 - Avaliação Psicológica para cirurgia bariátrica
 - Avaliação Psicológica para cirurgias reparadoras/plásticas
 - Avaliação Psicológica geral (laudo para processos, escola, trabalho, tratamento pessoal, indicação médica/psicológica)
@@ -76,43 +76,43 @@ Responda SEMPRE em português do Brasil.`;
 app.post("/chat", async (req, res) => {
   try {
     const { messages } = req.body;
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = process.env.ANTHROPIC_API_KEY;
 
-    // Formata histórico para o Gemini
-    const contents = messages.map(m => ({
-      role: m.role === "assistant" ? "model" : "user",
-      parts: [{ text: m.content }],
-    }));
+    if (!apiKey) {
+      throw new Error("ANTHROPIC_API_KEY não configurada");
+    }
 
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          system_instruction: {
-            parts: [{ text: SYSTEM_PROMPT }],
-          },
-          contents,
-          generationConfig: {
-            maxOutputTokens: 1000,
-            temperature: 0.7,
-          },
-        }),
-      }
-    );
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 1000,
+        system: SYSTEM_PROMPT,
+        messages: messages,
+      }),
+    });
 
     const data = await response.json();
 
     if (!response.ok) {
-      throw new Error(data.error?.message || "Erro na API do Gemini");
+      throw new Error(data.error?.message || "Erro na API do Claude");
     }
 
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "Desculpe, tive um probleminha. Pode repetir?";
+    const text =
+      data.content?.[0]?.text ||
+      "Desculpe, tive um probleminha. Pode repetir?";
+
     res.json({ text });
   } catch (error) {
     console.error("Erro:", error.message);
-    res.status(500).json({ text: "Ops, tive um problema. Tente novamente em instantes." });
+    res
+      .status(500)
+      .json({ text: "Ops, tive um problema. Tente novamente em instantes." });
   }
 });
 
